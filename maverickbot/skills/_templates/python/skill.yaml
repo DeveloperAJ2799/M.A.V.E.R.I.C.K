@@ -1,0 +1,14 @@
+skill:
+  name: "my_python_skill"
+  version: "1.0.0"
+  description: "A skill with custom Python workflow logic"
+  tools_required:
+    - "read_file"
+    - "write_file"
+    - "shell"
+  system_prompt: |
+    You are an expert in [domain]. Use the workflow.py to handle complex logic.
+  workflow: "custom"
+  config:
+    domain: "custom"
+    max_iterations: 10

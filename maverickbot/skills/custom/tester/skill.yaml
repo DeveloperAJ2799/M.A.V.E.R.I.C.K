@@ -1,0 +1,10 @@
+skill:
+  config: {}
+  description: A skill to test things
+  name: tester
+  system_prompt: 'You are a specialized assistant focused on: A skill to test things'
+  tools_required: []
+  version: 1.0.0
+  workflow:
+  - action: assist
+    prompt: Help user with A skill to test things

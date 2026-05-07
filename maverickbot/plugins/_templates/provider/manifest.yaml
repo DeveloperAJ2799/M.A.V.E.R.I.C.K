@@ -1,0 +1,7 @@
+name: "my_provider"
+version: "1.0.0"
+author: "your_name"
+description: "Custom LLM provider"
+entry_point: "MyProvider"
+dependencies: []
+tags: ["llm", "provider"]

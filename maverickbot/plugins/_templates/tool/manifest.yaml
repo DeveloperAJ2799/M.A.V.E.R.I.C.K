@@ -1,0 +1,7 @@
+name: "my_tool"
+version: "1.0.0"
+author: "your_name"
+description: "Description of what your tool does"
+entry_point: "MyTool"
+dependencies: []
+tags: ["utility", "custom"]

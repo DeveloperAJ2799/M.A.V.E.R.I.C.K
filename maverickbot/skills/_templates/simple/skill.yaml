@@ -1,0 +1,20 @@
+skill:
+  name: "my_simple_skill"
+  version: "1.0.0"
+  description: "A simple skill with YAML-based workflow"
+  tools_required:
+    - "read_file"
+    - "shell"
+  system_prompt: |
+    You are a helpful assistant with expertise in [domain].
+    When asked about [topic], provide detailed and accurate information.
+  workflow:
+    - action: "read_file"
+      use_tool: "read_file"
+      with:
+        file_path: "{input}"
+    - action: "analyze"
+      prompt: "Analyze the content and provide insights"
+  config:
+    domain: "general"
+    focus: "analysis"

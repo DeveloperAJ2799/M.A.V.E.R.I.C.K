@@ -1,0 +1,44 @@
+supervisor:
+  capabilities:
+  - planning
+  - coordination
+  - synthesis
+  max_iterations: 10
+  name: supervisor
+  role: supervisor
+  system_prompt: You are a task supervisor that breaks down complex tasks into subtasks
+    and coordinates workers.
+  timeout: 120
+workers:
+- capabilities:
+  - search
+  - analysis
+  - information_gathering
+  name: researcher
+  role: worker
+  system_prompt: You are a research specialist. Search for information, analyze data,
+    and provide findings.
+  tools:
+  - search_tool
+  - read_file
+- capabilities:
+  - coding
+  - debugging
+  - code_review
+  name: coder
+  role: worker
+  system_prompt: You are a coding specialist. Write, review, and debug code.
+  tools:
+  - read_file
+  - write_file
+  - shell
+- capabilities:
+  - writing
+  - editing
+  - summarization
+  name: writer
+  role: worker
+  system_prompt: You are a writing specialist. Create clear, well-structured content.
+  tools:
+  - read_file
+  - write_file

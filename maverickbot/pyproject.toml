@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "maverickbot"
+version = "0.1.0"
+description = "M.A.V.E.R.I.C.K - AI agent with local LLM and tool execution"
+requires-python = ">=3.10"
+dependencies = [
+    "aiohttp>=3.9.0",
+    "loguru>=0.7.0",
+    "colorama>=0.4.6",
+    "tiktoken>=0.5.0",
+]
+
+[project.scripts]
+maverickbot = "maverickbot.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["maverickbot*"]

@@ -1,0 +1,14 @@
+skill:
+  name: "quick_summary"
+  version: "1.0.0"
+  description: "Quickly summarize text or content in bullet points"
+  tools_required:
+    - "read_file"
+  system_prompt: |
+    You are a summarization expert. When given text, create a concise summary in 3-5 bullet points.
+    Focus on the key insights and main ideas. Keep each bullet point brief and actionable.
+  workflow:
+    - action: "summarize"
+      prompt: "Create a concise summary in bullet points"
+  config:
+    max_bullets: 5
