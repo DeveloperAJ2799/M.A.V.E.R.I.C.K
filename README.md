@@ -11,6 +11,15 @@ M.A.V.E.R.I.C.K is an AI agent framework with plugin architecture, skill system,
 - **Multi-Agent System**: Supervisor-worker architecture for complex task decomposition
 - **Interactive CLI**: Rich command-line interface with tab completion and history
 
+### Recent Updates
+
+- **Edit Tool**: In-place file modifications using oldString/newString replacement with diff preview
+- **Grep Tool**: Regex-based content search with context lines and file filtering
+- **Glob Tool**: File pattern matching with configurable depth and hidden file options
+- **Plan Tool**: Structured task planning for complex multi-step workflows
+- **MCP Integration**: Connect to Model Context Protocol servers for extended capabilities
+- **Run_Maverick.py**: Standalone launcher script for easy execution
+
 ## Installation
 
 ```bash
