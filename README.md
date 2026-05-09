@@ -98,6 +98,4 @@ maverickbot/
 └── mcp/             # MCP client support
 ```
 
-## License
 
-MIT
