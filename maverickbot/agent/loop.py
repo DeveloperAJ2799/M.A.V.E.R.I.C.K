@@ -319,7 +319,7 @@ class AgentLoop:
         logger.debug(f"Executing tool: {tool_name} with args: {args}")
 
         # Check cache first for read-only tools
-        cacheable_tools = {"read_file", "read_pdf", "read_docx", "read_xlsx", "read_csv", "system_info", "git_status", "git_log"}
+        cacheable_tools = {"read_file", "read_pdf", "read_docx", "read_xlsx", "read_csv", "system_info", "git_status", "git_log", "grep", "glob", "list_mcp_servers"}
         if tool_name in cacheable_tools:
             cached_result = self._tool_cache.get(tool_name, args)
             if cached_result is not None:

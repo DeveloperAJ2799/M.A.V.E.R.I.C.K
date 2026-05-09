@@ -25,6 +25,11 @@ from maverickbot.agent.tools.execute_code import ExecuteCodeTool
 from maverickbot.agent.tools.git_tools import GitStatusTool, GitLogTool, GitDiffTool, GitBranchTool
 from maverickbot.agent.tools.data_tools import ParseJsonTool, ToYamlTool, FromYamlTool, ValidateJsonTool
 from maverickbot.agent.tools.system_tools import SystemInfoTool, ClipboardReadTool, ClipboardWriteTool, NotifyTool
+from maverickbot.agent.tools.grep_tool import GrepTool
+from maverickbot.agent.tools.glob_tool import GlobTool
+from maverickbot.agent.tools.edit_tool import EditFileTool, ReplaceAllTool
+from maverickbot.agent.tools.plan_tool import PlanTool, TodoListTool
+from maverickbot.agent.tools.mcp_tools import AddMCPServerTool, AddMCPServerStdioTool, ListMCPServersTool, RemoveMCPServerTool, CallMCPToolTool
 
 __all__ = [
     "Tool",
@@ -67,4 +72,15 @@ __all__ = [
     "ClipboardReadTool",
     "ClipboardWriteTool",
     "NotifyTool",
+    "GrepTool",
+    "GlobTool",
+    "EditFileTool",
+    "ReplaceAllTool",
+    "PlanTool",
+    "TodoListTool",
+    "AddMCPServerTool",
+    "AddMCPServerStdioTool",
+    "ListMCPServersTool",
+    "RemoveMCPServerTool",
+    "CallMCPToolTool",
 ]

@@ -24,6 +24,8 @@ from maverickbot.agent.tools import (
     GitStatusTool, GitLogTool, GitDiffTool, GitBranchTool,
     ParseJsonTool, ToYamlTool, FromYamlTool, ValidateJsonTool,
     SystemInfoTool, ClipboardReadTool, ClipboardWriteTool, NotifyTool,
+    GrepTool, GlobTool, EditFileTool, ReplaceAllTool, PlanTool, TodoListTool,
+    AddMCPServerTool, AddMCPServerStdioTool, ListMCPServersTool, RemoveMCPServerTool, CallMCPToolTool,
     ToolResult
 )
 from maverickbot.multiagent import MultiAgentOrchestrator
@@ -147,6 +149,21 @@ class ChatCommand(Command):
         tool_registry.register(ClipboardWriteTool())
         tool_registry.register(NotifyTool())
 
+        # Coding agent tools
+        tool_registry.register(GrepTool())
+        tool_registry.register(GlobTool())
+        tool_registry.register(EditFileTool())
+        tool_registry.register(ReplaceAllTool())
+        tool_registry.register(PlanTool())
+        tool_registry.register(TodoListTool())
+
+        # MCP management tools
+        tool_registry.register(AddMCPServerTool())
+        tool_registry.register(AddMCPServerStdioTool())
+        tool_registry.register(ListMCPServersTool())
+        tool_registry.register(RemoveMCPServerTool())
+        tool_registry.register(CallMCPToolTool())
+
         # Initialize MCP client (use /mcp connect to enable)
         mcp_client = MCPClient()
         self.mcp_client = mcp_client
@@ -201,6 +218,14 @@ class ChatCommand(Command):
 - **write_file**: Write text to file
 - **append_file**: Append to file
 
+### CODE EDITING TOOLS (FOR CODING AGENT):
+- **grep**: Search for pattern in files. Input: {"pattern": "regex", "path": ".", "file_pattern": "*.py"}
+- **glob**: Find files by pattern. Input: {"pattern": "*.py", "path": "."}
+- **edit_file**: Replace oldString with newString in file. Input: {"file_path": "x.py", "oldString": "old", "newString": "new"}
+- **replace_all**: Replace all occurrences. Input: {"file_path": "x.py", "oldString": "old", "newString": "new"}
+- **plan**: Create task plan. Input: {"goal": "description", "constraints": "optional"}
+- **todo**: Track tasks. Input: {"action": "add|list|done|remove", "task": "text", "list_name": "default"}
+
 ### Web & Search:
 - **search**: Search the web. Input: {"query": "search terms"}
 - **fetch_url**: Get full content from a URL. Input: {"url": "https://..."}
@@ -229,11 +254,28 @@ class ChatCommand(Command):
 - **notify**: Send system notification. Input: {"message": "text", "title": "M.A.V.E.R.I.C.K"}
 - **shell**: Execute shell commands
 
+### MCP Server Management:
+- **add_mcp_server**: Add MCP server via HTTP/SSE. Input: {"url": "https://...", "name": "optional_name"}
+- **add_mcp_server_stdio**: Add MCP server via stdio. Input: {"command": "npx", "args": ["-y", "@server"], "name": "server_name"}
+- **list_mcp_servers**: List all configured MCP servers
+- **remove_mcp_server**: Remove an MCP server. Input: {"name": "server_name"}
+- **call_mcp_tool**: Call a tool from an MCP server. Input: {"server_name": "x", "tool_name": "tool", "arguments": {}}
+
 ## File Operations Protocol:
 1. When user asks to CREATE a file (PDF, DOCX, XLSX, PPTX, image, audio) → use appropriate CREATE tool
 2. When user asks to READ/EXTRACT from file → use appropriate READ tool
-3. When user asks for something not covered above → use shell tool
-4. When NO tool exists for needed operation → use [NEEDS_TOOL: description] format
+3. When user asks to SEARCH files → use grep or glob
+4. When user asks to EDIT file → use edit_file with oldString/newString
+5. When user asks for something not covered above → use shell tool
+6. When NO tool exists for needed operation → use [NEEDS_TOOL: description] format
+
+## Coding Agent Workflow:
+1. Understand the task: read relevant files first
+2. Search: Use grep to find patterns, glob to find files
+3. Plan: Create a plan using the plan tool
+4. Execute: Edit files as needed using edit_file
+5. Track: Use todo tool to track progress
+6. Verify: Check changes with git_diff
 
 ## Safety Guidelines:
 - For DELETE operations (rm, del, remove), ask for confirmation first
