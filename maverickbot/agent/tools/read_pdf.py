@@ -25,7 +25,14 @@ class ReadPdfTool(Tool):
             for page in reader.pages:
                 text += page.extract_text() + "\n"
             
-            return ToolResult(success=True, result=text[:8000])  # Limit output
+            limit = 32000
+            truncated = len(text) > limit
+            result_text = text[:limit]
+            
+            if truncated:
+                result_text += f"\n\n[WARNING: Content truncated due to size. Only first {limit} characters shown.]"
+            
+            return ToolResult(success=True, result=result_text)
         except ImportError:
             return ToolResult(success=False, result=None, error="pypdf not installed. Run: pip install pypdf")
         except FileNotFoundError:

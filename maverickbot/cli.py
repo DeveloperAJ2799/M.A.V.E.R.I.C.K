@@ -40,6 +40,9 @@ from maverickbot.agent.tools import (
     GetFileInfoTool,
     ShellTool,
     SearchTool,
+    UniversalReadTool,
+    ConvertDataTool,
+    CreateDataFileTool,
 )
 from maverickbot.core import Registry
 from maverickbot.multiagent import MultiAgentOrchestrator
@@ -77,6 +80,9 @@ class MaverickCLI:
         self.tool_registry.register(GetFileInfoTool())
         self.tool_registry.register(ShellTool())
         self.tool_registry.register(SearchTool())
+        self.tool_registry.register(UniversalReadTool())
+        self.tool_registry.register(ConvertDataTool())
+        self.tool_registry.register(CreateDataFileTool())
 
         self.runner = AgentRunner(
             provider=self.provider,
@@ -175,6 +181,9 @@ class MaverickCLI:
             self.tool_registry.register(GetFileInfoTool())
             self.tool_registry.register(ShellTool())
             self.tool_registry.register(SearchTool())
+            self.tool_registry.register(UniversalReadTool())
+            self.tool_registry.register(ConvertDataTool())
+            self.tool_registry.register(CreateDataFileTool())
             
             self.orchestrator = MultiAgentOrchestrator(
                 provider=self.provider,

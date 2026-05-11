@@ -30,6 +30,9 @@ from maverickbot.agent.tools.glob_tool import GlobTool
 from maverickbot.agent.tools.edit_tool import EditFileTool, ReplaceAllTool
 from maverickbot.agent.tools.plan_tool import PlanTool, TodoListTool
 from maverickbot.agent.tools.mcp_tools import AddMCPServerTool, AddMCPServerStdioTool, ListMCPServersTool, RemoveMCPServerTool, CallMCPToolTool
+from maverickbot.agent.tools.workspace_tool import WorkspaceTool, WorkspaceCopyTool
+from maverickbot.agent.tools.pdf_tools import PdfToPdfTool, QuickPdfTool
+from maverickbot.agent.tools.universal_data import UniversalReadTool, ConvertDataTool, CreateDataFileTool
 
 __all__ = [
     "Tool",
@@ -83,4 +86,11 @@ __all__ = [
     "ListMCPServersTool",
     "RemoveMCPServerTool",
     "CallMCPToolTool",
+    "WorkspaceTool",
+    "WorkspaceCopyTool",
+    "PdfToPdfTool",
+    "QuickPdfTool",
+    "UniversalReadTool",
+    "ConvertDataTool",
+    "CreateDataFileTool",
 ]

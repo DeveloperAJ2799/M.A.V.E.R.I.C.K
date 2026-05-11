@@ -1,6 +1,45 @@
+# Kilo
 .kilo/
-maverickbot.yaml
+
+# Python
 __pycache__/
 *.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Environment
+.env
+.env.*
+maverickbot.yaml
+*.yaml
+
+# Node.js
 node_modules/
 package-lock.json
+
+# Generated documents
+*.pdf
+*.html
+*.docx
+*.xlsx
+*.pptx
+*.csv
+*.json
+*.xml
+
+# Workspace / scripts
+workspace/
+test_*
+*_test.*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

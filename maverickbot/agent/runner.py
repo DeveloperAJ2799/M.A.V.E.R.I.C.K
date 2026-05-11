@@ -14,6 +14,7 @@ from .context_manager import (
     DEFAULT_CONTEXT_LIMIT,
 )
 from .fallback_manager import FallbackManager, create_fallback_chain
+from .workflow import WorkflowPlanner, create_auto_execute_loop
 
 
 class AgentRunner:
@@ -26,11 +27,13 @@ class AgentRunner:
         system_prompt: str = "You are a helpful AI assistant.",
         fallback_providers: List[LLMProvider] = None,
         fallback_names: List[str] = None,
+        auto_workflow: bool = True,
     ):
         self.primary_provider = provider
         self.tool_registry = tool_registry
         self.system_prompt = system_prompt
         self.session_manager = SessionManager()
+        self.auto_workflow = auto_workflow
         
         # Setup fallback chain
         self.fallback_manager = None
@@ -50,11 +53,19 @@ class AgentRunner:
         self.provider = self.fallback_manager.get_enabled_providers()[0][1] if self.fallback_manager else provider
         
         self.loop = AgentLoop(provider=self.provider, tool_registry=tool_registry)
+        
+        # Auto workflow planning
+        if auto_workflow:
+            self.auto_loop = create_auto_execute_loop(self.loop)
+            self._workflow_planner = WorkflowPlanner(tool_registry, self.provider)
+        else:
+            self.auto_loop = None
+            self._workflow_planner = None
 
         self.session_manager.create_session(system_prompt=system_prompt)
 
     async def chat(
-        self, user_input: str, temperature: float = 0.7, max_tokens: int = 4096
+        self, user_input: str, temperature: float = 0.7, max_tokens: int = 4096, skip_workflow: bool = False
     ) -> str:
         session = self.session_manager.get_current_session()
         if not session:
@@ -66,15 +77,21 @@ class AgentRunner:
         messages = session.get_messages()
 
         token_count = count_messages_tokens(messages)
-        # Trigger compaction earlier (30% = ~5000 tokens) to prevent timeouts
-        if token_count > int(DEFAULT_CONTEXT_LIMIT * 0.30):
+        # Trigger compaction only when approaching limit (80% = ~13,000 tokens)
+        if token_count > int(DEFAULT_CONTEXT_LIMIT * 0.80):
             print(f"[Auto-compacting session ({token_count} tokens)...]")
             compacted = compact_messages(messages)
             session.replace_messages(compacted)
             messages = session.get_messages()
 
-        # Use fallback if available, otherwise direct call
-        if self.fallback_manager:
+        # Use auto workflow if enabled and not explicitly skipped
+        if self.auto_loop and not skip_workflow and not user_input.startswith("!noworkflow") and not user_input.startswith("!plan"):
+            try:
+                response = await self.auto_loop.process_message(messages=messages)
+            except Exception as e:
+                logger.warning(f"Auto workflow failed: {e}, falling back to direct")
+                response = await self.loop.process_message(messages=messages)
+        elif self.fallback_manager:
             try:
                 response = await self.fallback_manager.call(
                     "process_message",

@@ -26,6 +26,9 @@ from maverickbot.agent.tools import (
     SystemInfoTool, ClipboardReadTool, ClipboardWriteTool, NotifyTool,
     GrepTool, GlobTool, EditFileTool, ReplaceAllTool, PlanTool, TodoListTool,
     AddMCPServerTool, AddMCPServerStdioTool, ListMCPServersTool, RemoveMCPServerTool, CallMCPToolTool,
+    WorkspaceTool, WorkspaceCopyTool,
+    PdfToPdfTool, QuickPdfTool,
+    UniversalReadTool, ConvertDataTool, CreateDataFileTool,
     ToolResult
 )
 from maverickbot.multiagent import MultiAgentOrchestrator
@@ -142,6 +145,9 @@ class ChatCommand(Command):
         tool_registry.register(ToYamlTool())
         tool_registry.register(FromYamlTool())
         tool_registry.register(ValidateJsonTool())
+        tool_registry.register(UniversalReadTool())
+        tool_registry.register(ConvertDataTool())
+        tool_registry.register(CreateDataFileTool())
         
         # System tools
         tool_registry.register(SystemInfoTool())
@@ -164,12 +170,21 @@ class ChatCommand(Command):
         tool_registry.register(RemoveMCPServerTool())
         tool_registry.register(CallMCPToolTool())
 
+        # Workspace tools
+        tool_registry.register(WorkspaceTool())
+        tool_registry.register(WorkspaceCopyTool())
+        tool_registry.register(PdfToPdfTool())
+        tool_registry.register(QuickPdfTool())
+
         # Initialize MCP client (use /mcp connect to enable)
         mcp_client = MCPClient()
         self.mcp_client = mcp_client
 
-        # Connect to MCP servers from config
-        await self._connect_mcp_servers(mcp_client, tool_registry, config)
+        # Connect to MCP servers from config (non-blocking)
+        try:
+            await self._connect_mcp_servers(mcp_client, tool_registry, config)
+        except Exception as e:
+            logger.debug(f"MCP connection skipped: {e}")
 
         # Auto-discover tools from agent/tools directory
         self._auto_discover_tools(tool_registry)
@@ -198,7 +213,7 @@ class ChatCommand(Command):
 
 ### Document Creation:
 - **create_pptx**: Create PowerPoint. Input: {"slides": [{"title": "X", "content": ["a", "b"]}], "output": "file.pptx"}
-- **create_pdf**: Create PDF. Input: {"content": "text", "output": "file.pdf"}
+- **create_pdf**: Create PDF. Input: {"source_pdf": "input.pdf", "output": "output.pdf"} OR {"content": "text", "output": "output.pdf"}
 - **create_docx**: Create Word doc. Input: {"content": "text", "title": "Title", "output": "file.docx"}
 - **create_xlsx**: Create Excel. Input: {"data": [["row1"], ["row2"]], "headers": ["col1"], "output": "file.xlsx"}
 
@@ -298,6 +313,13 @@ class ChatCommand(Command):
             tool_registry=tool_registry,
             system_prompt=enhanced_prompt,
         )
+        
+        # Enable UX mode for non-technical users
+        from maverickbot.ux.agent import create_ux_agent
+        self.ux_agent = create_ux_agent(self.runner)
+        
+        # Initialize thinking agent for deep analysis and self-correction
+        self.ux_agent.init_thinking(tool_registry, provider)
 
         if args.prompt:
             response = await self._single_prompt(args.prompt, args.multi_agent)
@@ -351,7 +373,8 @@ class ChatCommand(Command):
                 response = str(result.get("result", {}))
         else:
             try:
-                response = await self.runner.chat(prompt)
+                # Use UX agent for non-technical user experience
+                response = await self.ux_agent.process(prompt)
             except Exception as e:
                 import traceback
                 traceback.print_exc()

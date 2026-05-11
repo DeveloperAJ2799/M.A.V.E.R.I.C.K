@@ -228,85 +228,89 @@ class AgentLoop:
         system_prompt: str = None,
     ) -> str:
         tool_schemas = self._get_schemas_cached()
+        all_new_tool_results = []
+        tool_calls_iteration = 0
+        final_text_content = ""
 
-        spinner = _ThinkingSpinner()
-        spinner.start()
-        try:
-            response = await self.provider.chat(
-                messages=messages,
-                tools=tool_schemas if tool_schemas else None,
-            )
-        finally:
-            spinner.stop()
+        while tool_calls_iteration < self.max_tool_calls:
+            spinner = _ThinkingSpinner()
+            spinner.start()
+            try:
+                response = await self.provider.chat(
+                    messages=messages,
+                    tools=tool_schemas if tool_schemas else None,
+                )
+            finally:
+                spinner.stop()
 
-        # Check if response was truncated and needs continuation
-        content = response.content if response.content else ""
-        if self._should_continue(response):
-            content = await self._continue_response(messages, content)
+            # Check if response was truncated and needs continuation
+            content = response.content if response.content else ""
+            if self._should_continue(response):
+                content = await self._continue_response(messages, content)
 
-        if response.tool_calls:
-            # Handle case where model returns only tool call with no text content
-            # Use the (potentially continued) content, not response.content
-            assistant_content = content if content else ""
-            
+            if not response.tool_calls:
+                final_text_content = content
+                break
+
+            # Add assistant message with tool calls to history
             messages.append(
                 {
                     "role": "assistant",
-                    "content": assistant_content,
+                    "content": content,
                     "tool_calls": response.tool_calls,
                 }
             )
 
-            # Execute tool calls IN PARALLEL for better performance
+            # Execute tool calls IN PARALLEL
             tool_call_tasks = [
-                self._execute_tool(tool_call, messages)
+                self._execute_tool(tool_call)
                 for tool_call in response.tool_calls
             ]
-            tool_results = await asyncio.gather(*tool_call_tasks)
-            
-            # Get all tool results
-            tool_results_content = "\n".join(
-                msg["content"] for msg in messages 
-                if msg.get("role") == "tool"
-            )
-            
-            # If there are tool results, include them in the response
-            if tool_results_content:
-                # Add tool results to the conversation and get final response
-                spinner2 = _ThinkingSpinner()
-                spinner2.start()
-                try:
-                    final_response = await self.provider.chat(messages=messages)
-                finally:
-                    spinner2.stop()
-                
-                final_content = final_response.content if final_response.content else ""
-                
-                # Check for truncation and continue if needed
-                if self._should_continue(final_response):
-                    final_content = await self._continue_response(messages, final_content)
-                
-                # Combine tool results with final response
-                if final_content:
-                    return f"{tool_results_content}\n\n{final_content}"
-                else:
-                    return tool_results_content
-            else:
-                return "Tool executed"
+            new_tool_messages = await asyncio.gather(*tool_call_tasks)
 
-        return response.content if response.content else ""
+            # Append results to messages in deterministic order
+            iteration_results = []
+            for tool_msg in new_tool_messages:
+                messages.append(tool_msg)
+                iteration_results.append(tool_msg["content"])
+                all_new_tool_results.append(tool_msg["content"])
+
+            # If any tool failed with a critical error, we might want to stop, 
+            # but usually we let the LLM see the error and decide.
+            # For now, preserve the original behavior of returning errors if they occur.
+            failed_results = [r for r in iteration_results if r.startswith("Error:")]
+            if failed_results:
+                # If we have successful results too, maybe we should continue?
+                # The original code returned immediately on any error.
+                return "\n".join(iteration_results)
+
+            tool_calls_iteration += 1
+
+        # Combine ONLY the tool results from this entire process_message call with the final content
+        tool_results_combined = "\n".join(all_new_tool_results)
+        
+        if tool_results_combined and final_text_content:
+            return f"{tool_results_combined}\n\n{final_text_content}"
+        elif tool_results_combined:
+            return tool_results_combined
+        else:
+            return final_text_content
 
     async def _execute_tool(
-        self, tool_call: Dict[str, Any], messages: List[Dict[str, str]]
-    ) -> str:
+        self, tool_call: Dict[str, Any]
+    ) -> Dict[str, str]:
         func = tool_call.get("function", {})
         tool_name = func.get("name")
         arguments = func.get("arguments", "{}")
 
-        # Handle placeholder tool names - model didn't make a valid tool call
+        # Handle placeholder tool names
         if not tool_name or tool_name == "function_name" or tool_name == "unknown":
-            logger.warning(f"Invalid tool name from model: {tool_name}, skipping tool execution")
-            return "Tool call skipped - model did not specify valid function"
+            logger.warning(f"Invalid tool name from model: {tool_name}")
+            return {
+                "role": "tool",
+                "tool_call_id": tool_call.get("id"),
+                "content": "Error: Invalid tool name specified",
+            }
 
         try:
             if isinstance(arguments, str):
@@ -323,13 +327,12 @@ class AgentLoop:
         if tool_name in cacheable_tools:
             cached_result = self._tool_cache.get(tool_name, args)
             if cached_result is not None:
-                messages.append({
+                logger.debug(f"Tool cache hit: {tool_name}")
+                return {
                     "role": "tool",
                     "tool_call_id": tool_call.get("id"),
                     "content": cached_result,
-                })
-                logger.debug(f"Tool cache hit: {tool_name}")
-                return cached_result
+                }
 
         # Show process bar during tool execution
         process_bar = _ProcessBar(tool_name)
@@ -341,19 +344,15 @@ class AgentLoop:
         
         result_content = result.result if result.success else f"Error: {result.error}"
 
-        messages.append(
-            {
-                "role": "tool",
-                "tool_call_id": tool_call.get("id"),
-                "content": result_content,
-            }
-        )
-        
         # Cache successful results for read-only tools
         if tool_name in cacheable_tools and result.success:
             self._tool_cache.set(tool_name, args, result_content)
         
-        return result_content
+        return {
+            "role": "tool",
+            "tool_call_id": tool_call.get("id"),
+            "content": result_content,
+        }
 
     async def chat_stream(self, messages: List[Dict[str, str]]) -> str:
         """Process message and yield streaming response."""

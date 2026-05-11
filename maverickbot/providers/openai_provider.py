@@ -9,7 +9,7 @@ class OpenAIProvider(LLMProvider):
 
     def __init__(self, model: str = "gpt-4", api_key: str = None, base_url: str = None, **kwargs):
         super().__init__(model)
-        self.client = openai.OpenAI(
+        self.client = openai.AsyncOpenAI(
             api_key=api_key or openai.api_key,
             base_url=base_url or "https://api.openai.com/v1"
         )
@@ -36,7 +36,7 @@ class OpenAIProvider(LLMProvider):
         
         # Make API call
         try:
-            response = self.client.chat.completions.create(
+            response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=messages,
                 temperature=temperature,
@@ -80,8 +80,12 @@ class OpenAIProvider(LLMProvider):
     async def list_models(self) -> List[str]:
         """List available models."""
         try:
-            models = self.client.models.list()
+            models = await self.client.models.list()
             return [m.id for m in models.data]
         except Exception:
             # Return default models if API fails
             return ["gpt-4", "gpt-4-turbo", "gpt-3.5-turbo"]
+
+    async def close(self):
+        """Close the provider."""
+        await self.client.close()
